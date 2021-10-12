@@ -33,9 +33,13 @@ const App = () => {
     personService
       .update(person.id, changedPerson)
       .then(response => {
-        setPersons(persons.map(p => p.id !== person.id ? p : response.data));
+        setPersons(persons.map(p => p.id !== person.id ? p : response));
         setNewName('');
         setNewNumber('');
+      })
+      .catch(error => {
+        alert(`the person '${person.name}' was already deleted from server`);
+        setPersons(persons.filter(p => p.id !== person.id));
       });
   }
 
