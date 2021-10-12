@@ -3,12 +3,15 @@ import Filter from './components/Filter';
 import PersonForm from './components/PersonForm';
 import Persons from './components/Persons';
 import personService from './services/persons';
+import Notification from './components/Notification';
+import './index.css';
 
 const App = () => {
   const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState('');
   const [newNumber, setNewNumber] = useState('');
   const [filter, setFilter] = useState('');
+  const [message, setMessage] = useState({message: null, isError: null});
 
   useEffect(() => {
     personService
@@ -36,16 +39,37 @@ const App = () => {
         setPersons(persons.map(p => p.id !== person.id ? p : response));
         setNewName('');
         setNewNumber('');
+        setMessage({message: `Updated number of ${response.name}`, isError: false});
+        setTimeout(() => { setMessage({message: null, isError: null}) }, 5000);
       })
       .catch(error => {
-        alert(`the person '${person.name}' was already deleted from server`);
+        setMessage({ message: `The person '${person.name}' was already deleted from server`, isError: true});
+        setTimeout(() => { setMessage({message: null, isError: null}) }, 5000);
         setPersons(persons.filter(p => p.id !== person.id));
+      });
+  }
+
+  const addPerson = () => {
+    const personObject = {
+      name: newName,
+      number: newNumber
+    };
+
+    personService
+      .create(personObject)
+      .then(response => {
+        setPersons([...persons, response]);
+        setNewName('');
+        setNewNumber('');
+        setMessage({message: `Added ${response.name}`, isError: false});
+        setTimeout(() => { setMessage({message: null, isError: null}) }, 5000);
       });
   }
 
   const handleSubmit = (event) => {
     event.preventDefault();
     const person = persons.find(person => person.name === newName);
+
     if(person){
       
       if(window.confirm(`${newName} is already added to phonebook, replace the old number with a new one`)){
@@ -53,18 +77,7 @@ const App = () => {
       }
 
     } else {
-      const personObject = {
-        name: newName,
-        number: newNumber
-      };
-
-      personService
-        .create(personObject)
-        .then(response => {
-          setPersons([...persons, response]);
-          setNewName('');
-          setNewNumber('');
-        });
+      addPerson();
     }
   }
 
@@ -80,6 +93,11 @@ const App = () => {
         .remove(id)
         .then(() => {
           setPersons(persons.filter(p => p.id !== id));
+        })
+        .catch(error => {
+          setMessage({ message: `The person '${personToDelete.name}' was already deleted from server`, isError: true});
+          setTimeout(() => { setMessage({message: null, isError: null}) }, 5000);
+          setPersons(persons.filter(p => p.id !== id));
         });
     }
     
@@ -88,6 +106,7 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <Notification message={message} />
       <Filter filter={filter} handleFilter={handleFilter} />
       <h3>add a new</h3>
       <PersonForm 
